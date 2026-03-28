@@ -22,7 +22,6 @@ from body29_pipeline.constants import (
   DEFAULT_VIDEO_PATH,
   MJLAB_G1_XML,
   MJLAB_ROOT,
-  UNITREE_MUJOCO_G1_SCENE_29DOF,
 )
 from body29_pipeline.validate_input import validate_motion_bundle
 
@@ -316,40 +315,6 @@ def command_compare_onnx(args: argparse.Namespace) -> int:
   return run_command(cmd)
 
 
-def command_sim2sim(args: argparse.Namespace) -> int:
-  checkpoint = args.checkpoint_file or latest_checkpoint(args.experiment_name)
-  onnx_file = args.onnx_file or default_onnx_path(checkpoint)
-  args.output_video.parent.mkdir(parents=True, exist_ok=True)
-  if args.output_metrics is not None:
-    args.output_metrics.parent.mkdir(parents=True, exist_ok=True)
-
-  cmd = [
-    "uv",
-    "run",
-    "-m",
-    "mjlab.tasks.tracking.scripts.unitree_mujoco_sim2sim",
-    "--onnx-file",
-    str(onnx_file),
-    "--motion-file",
-    str(args.motion_file),
-    "--xml-file",
-    str(args.xml_file),
-    "--output-video",
-    str(args.output_video),
-    "--video-height",
-    str(args.video_height),
-    "--video-width",
-    str(args.video_width),
-  ]
-  if args.output_metrics is not None:
-    cmd.extend(["--output-metrics", str(args.output_metrics)])
-  if args.num_steps is not None:
-    cmd.extend(["--num-steps", str(args.num_steps)])
-  if args.onnx_provider is not None:
-    cmd.extend(["--onnx-provider", args.onnx_provider])
-  return run_command(cmd)
-
-
 def build_parser() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
     description="Workspace helpers for the body-only G1 tracking pipeline."
@@ -501,28 +466,6 @@ def build_parser() -> argparse.ArgumentParser:
     default=DEFAULT_OUTPUT_DIR / "onnx_parity.json",
   )
   compare_onnx_parser.set_defaults(func=command_compare_onnx)
-
-  sim2sim_parser = subparsers.add_parser("sim2sim")
-  sim2sim_parser.add_argument("--motion-file", type=Path, default=DEFAULT_NPZ_PATH)
-  sim2sim_parser.add_argument("--checkpoint-file", type=Path)
-  sim2sim_parser.add_argument("--onnx-file", type=Path)
-  sim2sim_parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
-  sim2sim_parser.add_argument("--xml-file", type=Path, default=UNITREE_MUJOCO_G1_SCENE_29DOF)
-  sim2sim_parser.add_argument(
-    "--output-video",
-    type=Path,
-    default=DEFAULT_OUTPUT_DIR / "sim2sim_unitree_mujoco.mp4",
-  )
-  sim2sim_parser.add_argument(
-    "--output-metrics",
-    type=Path,
-    default=DEFAULT_OUTPUT_DIR / "sim2sim_unitree_mujoco.json",
-  )
-  sim2sim_parser.add_argument("--video-height", type=int, default=720)
-  sim2sim_parser.add_argument("--video-width", type=int, default=1280)
-  sim2sim_parser.add_argument("--num-steps", type=int)
-  sim2sim_parser.add_argument("--onnx-provider", choices=("cpu", "cuda"), default="cpu")
-  sim2sim_parser.set_defaults(func=command_sim2sim)
 
   return parser
 

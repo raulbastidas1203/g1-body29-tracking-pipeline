@@ -1,53 +1,38 @@
 # Sim2Sim
 
-## Purpose
+## Status
 
-The goal of sim2sim here is:
+The previous `unitree_mujoco` baseline runner was intentionally removed during cleanup.
 
-- keep the trained `mjlab` policy fixed
-- execute it in a different simulator stack
-- measure how much transfer survives before touching real hardware
+We are no longer treating that path as the active route for this repository because it mixed:
 
-## Current Command
+- a policy trained with the standard `mjlab` G1 tracking contract
+- a standalone runner with different deployment assumptions
+- and an official MuJoCo XML/controller stack that did not match training closely enough
 
-```bash
-python3 -m body29_pipeline.cli sim2sim \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_2399.pt \
-  --motion-file artifacts/video_005/motion.npz \
-  --output-video artifacts/video_005/sim2sim_unitree_mujoco/model_2399_full.mp4 \
-  --output-metrics artifacts/video_005/sim2sim_unitree_mujoco/model_2399_full.json \
-  --num-steps 285 \
-  --onnx-provider cpu
-```
+## Active Direction
 
-## What The Current Sim2Sim Runner Does
+The current direction is to follow the public `g1-moves` pattern more closely:
 
-- loads the official `unitree_mujoco` G1 29-DoF XML
-- loads the exported ONNX policy
-- reconstructs the 160-dim tracking observation
-- applies the same action semantics used in `mjlab`
-- runs a PD torque controller
-- records a video and a metrics JSON
+- train in the standard `mjlab` tracking task
+- validate with `mjlab` play / rollout first
+- keep the training/deployment contract consistent
+- only add a standalone sim2sim path once the target XML, observation semantics, and control loop are frozen
 
-## Current Status
+## What Not To Do
 
-The first full transfer is not yet good enough.
+Do not revive the old `body29_pipeline.cli sim2sim` command from older notes.
 
-Current full-run baseline:
+That route was retired on purpose so the repo does not keep pointing teammates at a stale baseline that we already decided not to pursue.
 
-- `fell = true`
-- `body_mpkpe ~= 1.01`
-- `r_mpkpe ~= 0.45`
+## Next Sim2Sim Milestone
 
-This is still useful because it gives us:
+Before a new sim2sim path is added back, we need all of the following:
 
-- a reproducible baseline
-- a concrete alternate simulator target
-- a place to debug transfer rather than retraining blind
+- a chosen deployment stack
+- a chosen target XML
+- a confirmed observation contract
+- a confirmed action contract
+- a confirmed controller contract
 
-## Expected Next Work
-
-- tighten observation matching between `mjlab` and `unitree_mujoco`
-- tune the sim2sim controller loop
-- inspect remaining actuator / velocity / frame-convention mismatches
-
+Once those are frozen, this document will be replaced with the new reproducible sim2sim procedure.

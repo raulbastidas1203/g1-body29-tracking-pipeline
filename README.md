@@ -4,8 +4,8 @@ This repository packages the local work we did for:
 
 - `video2robot` -> `mjlab`
 - single-clip RL tracking for `Unitree G1` 29 DoF
-- Gate B / Gate C validation
-- first `unitree_mujoco` sim2sim baseline
+- ONNX export and parity checks
+- a clean baseline aligned with the `g1-moves` / `mjlab` training route
 
 It is intentionally lightweight:
 
@@ -16,7 +16,7 @@ It is intentionally lightweight:
 ## What Is Included
 
 - [`body29_pipeline`](body29_pipeline)
-  - local CLI for validate / convert / train / evaluate / ONNX parity / sim2sim
+  - local CLI for validate / convert / train / evaluate / rollout / ONNX parity
 - [`patches/mjlab-body29-local-flow.patch`](patches/mjlab-body29-local-flow.patch)
   - our local `mjlab` modifications and helper scripts
 - [`scripts/bootstrap_upstreams.sh`](scripts/bootstrap_upstreams.sh)
@@ -62,15 +62,15 @@ python3 -m body29_pipeline.cli convert --render
 
 ```bash
 python3 -m body29_pipeline.cli train \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --iterations 1500 \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1 \
+  --iterations 30000 \
   --num-envs 1024 \
-  --save-interval 100 \
-  --run-name train_video_005_soft_root_1500
+  --save-interval 2000 \
+  --run-name train_video_005_base
 
 python3 -m body29_pipeline.cli evaluate \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_1499.pt
+  --task-id Mjlab-Tracking-Flat-Unitree-G1 \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only/<run>/model_29999.pt
 ```
 
 ## Documentation Map
@@ -82,6 +82,7 @@ python3 -m body29_pipeline.cli evaluate \
 - [`docs/04-evaluation-and-gates.md`](docs/04-evaluation-and-gates.md)
 - [`docs/05-sim2sim.md`](docs/05-sim2sim.md)
 - [`docs/06-team-checklist.md`](docs/06-team-checklist.md)
+- [`docs/07-training-explainer.md`](docs/07-training-explainer.md)
 
 ## Pinned Upstreams
 
@@ -93,5 +94,5 @@ python3 -m body29_pipeline.cli evaluate \
 
 - This repo is `body_29dof_only` by design.
 - Dex3 fingers stay fixed and outside policy / reward / motion reference.
-- The current best local candidate is the `SoftRoot` family with robust gating and ONNX parity checks.
-- The first `unitree_mujoco` sim2sim baseline is included, but it is not yet good enough for deployment.
+- The active route is now the standard `mjlab` tracking task, matching the public `g1-moves` workflow as closely as possible.
+- The old `unitree_mujoco` baseline runner was retired after cleanup; a new sim2sim path will be added only once it matches the deployment contract we actually want.

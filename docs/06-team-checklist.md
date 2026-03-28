@@ -10,9 +10,9 @@
 6. Run `validate --strict`.
 7. Run `convert --render`.
 8. Run the smoke training.
-9. Run the main `SoftRoot` training.
+9. Run the main standard `mjlab` tracking training.
 10. Evaluate, record rollout, and compare ONNX.
-11. Run sim2sim only after Gate B and Gate C are closed.
+11. Treat sim2sim as a separate phase only after the new deployment contract is frozen.
 
 ## Files To Review First
 
@@ -20,6 +20,7 @@
 - [`docs/03-training-curriculum.md`](03-training-curriculum.md)
 - [`docs/04-evaluation-and-gates.md`](04-evaluation-and-gates.md)
 - [`docs/05-sim2sim.md`](05-sim2sim.md)
+- [`docs/07-training-explainer.md`](07-training-explainer.md)
 
 ## Review Expectations
 
@@ -27,7 +28,7 @@ Teammates reviewing this repo should be able to answer:
 
 - what inputs are required
 - what was changed in upstream `mjlab`
-- which task variants were used
+- which tracking task is active right now
 - how the best checkpoint was selected
-- what gate threshold was used for sim2sim entry
-- what still fails in sim2sim
+- what evidence shows the policy learned inside `mjlab`
+- what still needs to be defined before reintroducing sim2sim
