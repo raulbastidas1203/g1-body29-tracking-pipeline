@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+.python-version
+
+00_RL_input/
+artifacts/
+research/
+

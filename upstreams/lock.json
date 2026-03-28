@@ -1,0 +1,15 @@
+{
+  "mjlab": {
+    "url": "https://github.com/mujocolab/mjlab",
+    "commit": "6abd0eb",
+    "patch": "patches/mjlab-body29-local-flow.patch"
+  },
+  "unitree_mujoco": {
+    "url": "https://github.com/unitreerobotics/unitree_mujoco",
+    "commit": "1a37b05"
+  },
+  "unitree_sdk2_python": {
+    "url": "https://github.com/unitreerobotics/unitree_sdk2_python",
+    "commit": "ab0d8ae"
+  }
+}

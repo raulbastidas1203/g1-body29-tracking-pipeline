@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "g1-body29-tracking-pipeline"
+version = "0.1.0"
+description = "Reproducible body-only Unitree G1 tracking pipeline from video2robot to mjlab."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[tool.setuptools]
+packages = ["body29_pipeline"]
+
+[tool.setuptools.package-data]
+body29_pipeline = ["config/*.json"]
+
