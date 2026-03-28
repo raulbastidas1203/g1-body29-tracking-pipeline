@@ -7,6 +7,7 @@ MJLAB_ROOT = ROOT_DIR / "research" / "mjlab"
 MJLAB_G1_XML = (
   MJLAB_ROOT / "src" / "mjlab" / "asset_zoo" / "robots" / "unitree_g1" / "xmls" / "g1.xml"
 )
+G1_MOVES_XML = ROOT_DIR / "research" / "TWIST2" / "assets" / "g1" / "g1_29dof_rev_1_0.xml"
 UNITREE_MUJOCO_G1_SCENE_29DOF = (
   ROOT_DIR / "research" / "unitree_mujoco" / "unitree_robots" / "g1" / "scene_29dof.xml"
 )
@@ -23,8 +24,8 @@ DEFAULT_VIDEO_PATH = DEFAULT_OUTPUT_DIR / "motion.mp4"
 DEFAULT_ROLLOUT_VIDEO_PATH = DEFAULT_OUTPUT_DIR / "policy_rollout.mp4"
 DEFAULT_ROLLOUT_METRICS_PATH = DEFAULT_OUTPUT_DIR / "policy_rollout_metrics.json"
 
-DEFAULT_EXPERIMENT_NAME = "body29dof_only"
-DEFAULT_TASK_ID = "Mjlab-Tracking-Flat-Unitree-G1"
+DEFAULT_EXPERIMENT_NAME = "body29dof_g1_moves_compat"
+DEFAULT_TASK_ID = "Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat"
 DEFAULT_SAFE_HAND_Q = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
 BODY_29_JOINT_NAMES = (

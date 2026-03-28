@@ -9,10 +9,11 @@
 5. Place the input bundle in `00_RL_input/video_005/`.
 6. Run `validate --strict`.
 7. Run `convert --render`.
-8. Run the smoke training.
-9. Run the main standard `mjlab` tracking training.
-10. Evaluate, record rollout, and compare ONNX.
-11. Treat sim2sim as a separate phase only after the new deployment contract is frozen.
+8. Run the `G1MovesCompat` smoke training.
+9. Export ONNX explicitly with `export-onnx`.
+10. Run parity and ONNX rollout checks.
+11. Run standalone `sim2sim` against the `g1_29dof_rev_1_0.xml` default or pass a custom XML.
+12. Only then start the long single-clip training run.
 
 ## Files To Review First
 
@@ -29,6 +30,7 @@ Teammates reviewing this repo should be able to answer:
 - what inputs are required
 - what was changed in upstream `mjlab`
 - which tracking task is active right now
-- how the best checkpoint was selected
+- what the actor-only ONNX contract is
+- how the best checkpoint will be selected
 - what evidence shows the policy learned inside `mjlab`
-- what still needs to be defined before reintroducing sim2sim
+- how the standalone runner reconstructs the observation vector

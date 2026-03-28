@@ -5,86 +5,82 @@
 We do not jump straight to hardware. The intended order is:
 
 1. conversion + replay
-2. smoke run
-3. real single-clip training
-4. robust gating
+2. `g1-moves`-compatible smoke run
+3. full single-clip training from scratch
+4. checkpoint selection
 5. ONNX parity
-6. sim2sim
+6. standalone `sim2sim`
 
-## Base Smoke Run
+## Active Task
+
+The active task is:
+
+- `Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat`
+
+What changes versus the base task:
+
+- `anchor_body_name = pelvis`
+- actor observation order matches `g1-moves`
+- ONNX export is actor-only (`obs -> actions`)
+- standalone replay consumes `onnx + motion.npz + xml`
+
+## Smoke Run
+
+Use this to verify that:
+
+- the task builds
+- PPO runs without NaNs
+- checkpoints save
+- ONNX export/parity work
 
 ```bash
 python3 -m body29_pipeline.cli smoke-train \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1 \
-  --iterations 2 \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
+  --iterations 100 \
   --num-envs 64 \
-  --save-interval 1 \
-  --run-name smoke_video_005
-```
-
-## Main Single-Clip Training
-
-The strongest clean-tracking branch we built used `SoftRoot`:
-
-```bash
-python3 -m body29_pipeline.cli train \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --motion-file artifacts/video_005/motion.npz \
-  --iterations 1500 \
-  --num-envs 1024 \
-  --save-interval 100 \
-  --experiment-name body29dof_only_soft_root \
-  --run-name train_video_005_soft_root_1500 \
+  --save-interval 50 \
+  --run-name smoke_video_005_g1_moves_compat \
   --video \
   --video-interval 100 \
   --video-length 285
 ```
 
-## Robust Fine-Tune
+## Main Single-Clip Training
 
-To improve Gate B we used a robust task variant:
-
-```bash
-python3 -m body29_pipeline.cli train \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRootRobust \
-  --motion-file artifacts/video_005/motion.npz \
-  --iterations 1000 \
-  --num-envs 1024 \
-  --save-interval 100 \
-  --experiment-name body29dof_only_soft_root \
-  --run-name finetune_softrootrobust_from1499_1000 \
-  --resume \
-  --load-run 2026-03-27_22-32-12_train_video_005_soft_root_1500 \
-  --load-checkpoint model_1499.pt
-```
-
-## Strict Re-Refine
-
-We then refined back on the stricter `SoftRoot` task:
+Train from scratch on the active task:
 
 ```bash
 python3 -m body29_pipeline.cli train \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
   --motion-file artifacts/video_005/motion.npz \
-  --iterations 600 \
-  --num-envs 1024 \
-  --save-interval 100 \
-  --experiment-name body29dof_only_soft_root \
-  --run-name refine_softroot_from_robust1800_600 \
-  --resume \
-  --load-run 2026-03-27_23-27-31_finetune_softrootrobust_from1499_1000 \
-  --load-checkpoint model_1800.pt
+  --iterations 15000 \
+  --num-envs 2048 \
+  --save-interval 2000 \
+  --experiment-name body29dof_g1_moves_compat \
+  --run-name train_video_005_g1_moves_compat \
+  --video \
+  --video-interval 5000 \
+  --video-length 285
 ```
 
-## Why This Curriculum
+## Checkpoint Selection
 
-- `SoftRoot` gave better visible single-clip tracking than rigid root variants
-- `SoftRootRobust` improved moderate-noise survival for Gate B
-- the refine stage recovered some fidelity after the robust phase
+We do not assume the last checkpoint is the best checkpoint.
 
-## Current Best Candidate
+Selection order:
 
-The current candidate selected for gating and sim2sim is:
+1. highest full-clip survival / timeout completion
+2. lowest `mpkpe`
+3. lowest `anchor_xy_error`
 
-- `model_2399.pt` from the refine stage
+## Export After Training
 
+Once a candidate checkpoint is chosen:
+
+```bash
+python3 -m body29_pipeline.cli export-onnx \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt
+```
+
+The exported ONNX is actor-only and is the artifact used for standalone `sim2sim`.

@@ -2,37 +2,45 @@
 
 ## Status
 
-The previous `unitree_mujoco` baseline runner was intentionally removed during cleanup.
+The active `sim2sim` route is now the standalone `g1-moves`-compatible runner.
 
-We are no longer treating that path as the active route for this repository because it mixed:
+What this means:
 
-- a policy trained with the standard `mjlab` G1 tracking contract
-- a standalone runner with different deployment assumptions
-- and an official MuJoCo XML/controller stack that did not match training closely enough
+- policy is exported as actor-only ONNX: `obs -> actions`
+- reference motion stays external in `motion.npz`
+- the standalone runner reconstructs observations from `onnx + npz + xml`
+- PD gains, default joint positions, and action scale come from ONNX metadata
 
-## Active Direction
+## Default XML
 
-The current direction is to follow the public `g1-moves` pattern more closely:
+The default XML path in this repo is:
 
-- train in the standard `mjlab` tracking task
-- validate with `mjlab` play / rollout first
-- keep the training/deployment contract consistent
-- only add a standalone sim2sim path once the target XML, observation semantics, and control loop are frozen
+`research/TWIST2/assets/g1/g1_29dof_rev_1_0.xml`
 
-## What Not To Do
+This is not bundled in this repository; `bootstrap_upstreams.sh` clones `TWIST2` so the default path exists on a fresh machine.
 
-Do not revive the old `body29_pipeline.cli sim2sim` command from older notes.
+## Command
 
-That route was retired on purpose so the repo does not keep pointing teammates at a stale baseline that we already decided not to pursue.
+```bash
+python3 -m body29_pipeline.cli sim2sim \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt \
+  --motion-file artifacts/video_005/motion.npz \
+  --xml-file research/TWIST2/assets/g1/g1_29dof_rev_1_0.xml \
+  --output-video artifacts/video_005/g1_moves_compat_sim2sim.mp4 \
+  --output-metrics artifacts/video_005/g1_moves_compat_sim2sim.json
+```
 
-## Next Sim2Sim Milestone
+## What The Runner Does
 
-Before a new sim2sim path is added back, we need all of the following:
+- loads the actor-only ONNX
+- reads `joint_names`, `action_scale`, `joint_stiffness`, `joint_damping`, `anchor_body_name`, and body-name metadata
+- selects the correct reference bodies from `motion.npz`
+- rebuilds the 160-dim observation vector in the `g1-moves` order
+- runs MuJoCo at the simulation timestep declared in the ONNX metadata
+- applies PD torques to the XML actuators
+- records MP4 and JSON metrics
 
-- a chosen deployment stack
-- a chosen target XML
-- a confirmed observation contract
-- a confirmed action contract
-- a confirmed controller contract
+## Notes
 
-Once those are frozen, this document will be replaced with the new reproducible sim2sim procedure.
+- The XML framebuffer may be smaller than 1280x720; the runner auto-clamps to the XML offscreen framebuffer size.
+- If standalone falls while `mjlab` rollout is fine, treat that as a contract/debug issue first, not as proof that PPO failed.

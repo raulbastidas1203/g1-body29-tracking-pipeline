@@ -4,11 +4,11 @@
 
 ```bash
 python3 -m body29_pipeline.cli evaluate \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_2399.pt \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt \
   --motion-file artifacts/video_005/motion.npz \
   --num-envs 64 \
-  --output-file artifacts/video_005/model_2399_eval.json
+  --output-file artifacts/video_005/g1_moves_compat_eval.json
 ```
 
 ## Rollout Video
@@ -17,11 +17,11 @@ PyTorch rollout:
 
 ```bash
 python3 -m body29_pipeline.cli record-rollout \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_2399.pt \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt \
   --motion-file artifacts/video_005/motion.npz \
-  --output-video artifacts/video_005/model_2399_rollout_pt.mp4 \
-  --output-metrics artifacts/video_005/model_2399_rollout_pt.json \
+  --output-video artifacts/video_005/g1_moves_compat_rollout_pt.mp4 \
+  --output-metrics artifacts/video_005/g1_moves_compat_rollout_pt.json \
   --num-steps 285 \
   --no-terminations
 ```
@@ -30,37 +30,32 @@ ONNX rollout:
 
 ```bash
 python3 -m body29_pipeline.cli record-rollout-onnx \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_2399.pt \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt \
   --motion-file artifacts/video_005/motion.npz \
-  --output-video artifacts/video_005/model_2399_rollout_onnx.mp4 \
-  --output-metrics artifacts/video_005/model_2399_rollout_onnx.json \
+  --output-video artifacts/video_005/g1_moves_compat_rollout_onnx.mp4 \
+  --output-metrics artifacts/video_005/g1_moves_compat_rollout_onnx.json \
   --num-steps 285 \
   --no-terminations
 ```
 
+## Gate A
+
+Before standalone `sim2sim`, require:
+
+- `5/5` full rollouts without early termination inside `mjlab`
+- `mpkpe <= 0.06`
+- `r_mpkpe <= 0.05`
+- `ee_pos_error <= 0.11`
+- `ee_ori_error <= 0.35`
+
 ## Gate B
 
-For this project we treated Gate B as:
+For this route, Gate B is the checkpoint-selection gate:
 
-- moderate-noise evaluation
-- `64` environments
-- `success_rate >= 0.5`
-
-Command:
-
-```bash
-python3 -m body29_pipeline.cli evaluate \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRootRobust \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_2399.pt \
-  --motion-file artifacts/video_005/motion.npz \
-  --num-envs 64 \
-  --output-file artifacts/video_005/gate_b_moderate/model_2399_softrootrobust.json
-```
-
-Current result:
-
-- `success_rate = 0.546875`
+- prefer the checkpoint with the highest full-clip survival
+- use `mpkpe` as first tie-breaker
+- use `anchor_xy_error` as second tie-breaker
 
 ## Gate C
 
@@ -70,19 +65,25 @@ Command:
 
 ```bash
 python3 -m body29_pipeline.cli compare-onnx \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-SoftRoot \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_only_soft_root/<run>/model_2399.pt \
+  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
+  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt \
   --motion-file artifacts/video_005/motion.npz \
   --num-envs 1 \
   --num-steps 285 \
-  --output-file artifacts/video_005/model_2399_parity.json
+  --output-file artifacts/video_005/g1_moves_compat_parity.json
 ```
 
-Current result:
+Pass condition:
 
 - mean action difference is on the order of `1e-7` to `1e-6`
 
-## Honest Note
+## Standalone Entry Gate
 
-Strict noisy evaluation on the plain `SoftRoot` task is still harder than the moderate Gate B threshold we used for sim2sim entry. That tradeoff should be kept visible in reviews.
+Only after Gate A and Gate C pass do we move to standalone `sim2sim`.
 
+For the standalone runner, the first acceptance target is:
+
+- `5/5` rollouts complete without fall
+- `anchor_xy_error <= 0.15 m`
+- `mpkpe <= 0.10`
+- visual behavior reasonably close to the `mjlab` rollout

@@ -4,6 +4,10 @@
     "commit": "6abd0eb",
     "patch": "patches/mjlab-body29-local-flow.patch"
   },
+  "TWIST2": {
+    "url": "https://github.com/amazon-far/TWIST2",
+    "commit": "d5c7108e9ef82d1b8770e5b692f27a1294f3aa8a"
+  },
   "unitree_mujoco": {
     "url": "https://github.com/unitreerobotics/unitree_mujoco",
     "commit": "1a37b05"

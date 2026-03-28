@@ -20,6 +20,7 @@ from body29_pipeline.constants import (
   DEFAULT_ROLLOUT_VIDEO_PATH,
   DEFAULT_TASK_ID,
   DEFAULT_VIDEO_PATH,
+  G1_MOVES_XML,
   MJLAB_G1_XML,
   MJLAB_ROOT,
 )
@@ -315,6 +316,62 @@ def command_compare_onnx(args: argparse.Namespace) -> int:
   return run_command(cmd)
 
 
+def command_export_onnx(args: argparse.Namespace) -> int:
+  checkpoint = args.checkpoint_file or latest_checkpoint(args.experiment_name)
+  onnx_file = args.onnx_file or default_onnx_path(checkpoint)
+  onnx_file.parent.mkdir(parents=True, exist_ok=True)
+  cmd = [
+    "uv",
+    "run",
+    "-m",
+    "mjlab.tasks.tracking.scripts.export_policy_onnx",
+    args.task_id,
+    "--checkpoint-file",
+    str(checkpoint),
+    "--motion-file",
+    str(args.motion_file),
+    "--output-file",
+    str(onnx_file),
+  ]
+  if args.device is not None:
+    cmd.extend(["--device", args.device])
+  return run_command(cmd)
+
+
+def command_sim2sim(args: argparse.Namespace) -> int:
+  checkpoint = args.checkpoint_file or latest_checkpoint(args.experiment_name)
+  onnx_file = args.onnx_file or default_onnx_path(checkpoint)
+  args.output_video.parent.mkdir(parents=True, exist_ok=True)
+  if args.output_metrics is not None:
+    args.output_metrics.parent.mkdir(parents=True, exist_ok=True)
+
+  cmd = [
+    "uv",
+    "run",
+    "-m",
+    "mjlab.tasks.tracking.scripts.g1_moves_standalone",
+    "--onnx-file",
+    str(onnx_file),
+    "--motion-file",
+    str(args.motion_file),
+    "--xml-file",
+    str(args.xml_file),
+    "--output-video",
+    str(args.output_video),
+    "--video-height",
+    str(args.video_height),
+    "--video-width",
+    str(args.video_width),
+  ]
+  if args.output_metrics is not None:
+    cmd.extend(["--output-metrics", str(args.output_metrics)])
+  if args.num_steps is not None:
+    cmd.extend(["--num-steps", str(args.num_steps)])
+  if args.speed != 1.0:
+    cmd.extend(["--speed", str(args.speed)])
+  return run_command(cmd)
+
+
 def build_parser() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
     description="Workspace helpers for the body-only G1 tracking pipeline."
@@ -343,11 +400,11 @@ def build_parser() -> argparse.ArgumentParser:
   smoke_parser = subparsers.add_parser("smoke-train")
   smoke_parser.add_argument("--task-id", default=DEFAULT_TASK_ID)
   smoke_parser.add_argument("--motion-file", type=Path, default=DEFAULT_NPZ_PATH)
-  smoke_parser.add_argument("--iterations", type=int, default=2)
-  smoke_parser.add_argument("--save-interval", type=int, default=1)
+  smoke_parser.add_argument("--iterations", type=int, default=100)
+  smoke_parser.add_argument("--save-interval", type=int, default=50)
   smoke_parser.add_argument("--num-envs", type=int, default=64)
   smoke_parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
-  smoke_parser.add_argument("--run-name", default="smoke_video_005")
+  smoke_parser.add_argument("--run-name", default="smoke_video_005_g1_moves_compat")
   smoke_parser.add_argument("--logger", choices=("tensorboard", "wandb"), default="tensorboard")
   smoke_parser.add_argument("--seed", type=int, default=42)
   smoke_parser.add_argument("--resume", action="store_true")
@@ -361,19 +418,19 @@ def build_parser() -> argparse.ArgumentParser:
   train_parser = subparsers.add_parser("train")
   train_parser.add_argument("--task-id", default=DEFAULT_TASK_ID)
   train_parser.add_argument("--motion-file", type=Path, default=DEFAULT_NPZ_PATH)
-  train_parser.add_argument("--iterations", type=int, default=1000)
-  train_parser.add_argument("--save-interval", type=int, default=100)
-  train_parser.add_argument("--num-envs", type=int, default=512)
+  train_parser.add_argument("--iterations", type=int, default=15000)
+  train_parser.add_argument("--save-interval", type=int, default=2000)
+  train_parser.add_argument("--num-envs", type=int, default=2048)
   train_parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
-  train_parser.add_argument("--run-name", default="train_video_005")
+  train_parser.add_argument("--run-name", default="train_video_005_g1_moves_compat")
   train_parser.add_argument("--logger", choices=("tensorboard", "wandb"), default="tensorboard")
   train_parser.add_argument("--seed", type=int, default=42)
   train_parser.add_argument("--resume", action="store_true")
   train_parser.add_argument("--load-run", default=".*")
   train_parser.add_argument("--load-checkpoint", default="model_.*.pt")
   train_parser.add_argument("--video", action="store_true")
-  train_parser.add_argument("--video-length", type=int, default=200)
-  train_parser.add_argument("--video-interval", type=int, default=2000)
+  train_parser.add_argument("--video-length", type=int, default=285)
+  train_parser.add_argument("--video-interval", type=int, default=5000)
   train_parser.set_defaults(func=command_train)
 
   play_parser = subparsers.add_parser("play")
@@ -466,6 +523,37 @@ def build_parser() -> argparse.ArgumentParser:
     default=DEFAULT_OUTPUT_DIR / "onnx_parity.json",
   )
   compare_onnx_parser.set_defaults(func=command_compare_onnx)
+
+  export_onnx_parser = subparsers.add_parser("export-onnx")
+  export_onnx_parser.add_argument("--task-id", default=DEFAULT_TASK_ID)
+  export_onnx_parser.add_argument("--motion-file", type=Path, default=DEFAULT_NPZ_PATH)
+  export_onnx_parser.add_argument("--checkpoint-file", type=Path)
+  export_onnx_parser.add_argument("--onnx-file", type=Path)
+  export_onnx_parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
+  export_onnx_parser.add_argument("--device")
+  export_onnx_parser.set_defaults(func=command_export_onnx)
+
+  sim2sim_parser = subparsers.add_parser("sim2sim")
+  sim2sim_parser.add_argument("--motion-file", type=Path, default=DEFAULT_NPZ_PATH)
+  sim2sim_parser.add_argument("--checkpoint-file", type=Path)
+  sim2sim_parser.add_argument("--onnx-file", type=Path)
+  sim2sim_parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
+  sim2sim_parser.add_argument("--xml-file", type=Path, default=G1_MOVES_XML)
+  sim2sim_parser.add_argument(
+    "--output-video",
+    type=Path,
+    default=DEFAULT_OUTPUT_DIR / "sim2sim_g1_moves.mp4",
+  )
+  sim2sim_parser.add_argument(
+    "--output-metrics",
+    type=Path,
+    default=DEFAULT_OUTPUT_DIR / "sim2sim_g1_moves.json",
+  )
+  sim2sim_parser.add_argument("--num-steps", type=int)
+  sim2sim_parser.add_argument("--video-height", type=int, default=720)
+  sim2sim_parser.add_argument("--video-width", type=int, default=1280)
+  sim2sim_parser.add_argument("--speed", type=float, default=1.0)
+  sim2sim_parser.set_defaults(func=command_sim2sim)
 
   return parser
 
