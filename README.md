@@ -25,16 +25,31 @@ The repo is intentionally lightweight:
 - best current sim2sim checkpoint: `model_14000.pt`
 - final long run stalled near the end around iteration `14811`, so we selected the best saved checkpoint from the completed artifacts instead of forcing a broken resume
 
-## Videos
+## Visual Results
 
-Click the thumbnails to open the MP4 files in GitHub.
+GitHub renders GIFs inline, so the key artifacts are embedded directly below. The MP4 versions are also committed for download.
 
-| Stage | Preview | Notes |
-| --- | --- | --- |
-| Reference motion | [![Reference motion](docs/media/thumbs/video_005_reference_motion.png)](docs/media/videos/video_005_reference_motion.mp4) | `video2robot -> motion.npz` reference replay |
-| `mjlab` rollout | [![mjlab rollout](docs/media/thumbs/video_005_mjlab_model_8000.png)](docs/media/videos/video_005_mjlab_model_8000.mp4) | Representative in-simulator tracking rollout |
-| RoboJuDo sim2sim, `model_10000` | [![RoboJuDo model 10000](docs/media/thumbs/video_005_robojudo_model_10000.png)](docs/media/videos/video_005_robojudo_model_10000.mp4) | First clearly good transfer checkpoint |
-| RoboJuDo sim2sim, `model_14000` | [![RoboJuDo model 14000](docs/media/thumbs/video_005_robojudo_model_14000.png)](docs/media/videos/video_005_robojudo_model_14000.mp4) | Best current transfer result |
+### 1. Original TikTok / input clip
+
+[![Original TikTok](docs/media/gifs/video_005_original_tiktok.gif)](docs/media/videos/video_005_original_tiktok.mp4)
+
+### 2. Converted reference motion used for training
+
+[![Reference motion](docs/media/gifs/video_005_reference_motion.gif)](docs/media/videos/video_005_reference_motion.mp4)
+
+### 3. Representative `mjlab` rollout
+
+[![mjlab rollout](docs/media/gifs/video_005_mjlab_model_8000.gif)](docs/media/videos/video_005_mjlab_model_8000.mp4)
+
+### 4. Original clip vs robot side by side
+
+This is the most important visual for quick review: source video on the left, best current RoboJuDo transfer on the right.
+
+![Original vs RoboJuDo](docs/media/gifs/video_005_original_vs_robojudo_14000.gif)
+
+### 5. Robot-only RoboJuDo rollout
+
+[![RoboJuDo model 14000](docs/media/gifs/video_005_robojudo_model_14000.gif)](docs/media/videos/video_005_robojudo_model_14000.mp4)
 
 ## What This Repo Contains
 
