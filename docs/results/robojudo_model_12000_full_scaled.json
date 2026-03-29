@@ -1,0 +1,15 @@
+{
+  "num_steps_requested": 285,
+  "num_steps_recorded": 285,
+  "num_frames": 285,
+  "mpkpe": 0.09359990567164986,
+  "r_mpkpe": 0.02830636761429017,
+  "joint_vel_error": 4.725798096573143,
+  "anchor_xy_error": 0.07579366259311561,
+  "anchor_xy_error_max": 0.17755926849152825,
+  "xml_file": "/home/raul/00_cursor/RL/research/g1-moves/RoboJuDo/assets/robots/g1/g1_29dof_rev_1_0.xml",
+  "motion_file": "/home/raul/00_cursor/RL/artifacts/video_005/motion.npz",
+  "onnx_file": "/home/raul/00_cursor/RL/artifacts/video_005/g1_moves_compat_eval_checkpoints/model_12000.onnx",
+  "action_mode": "scaled_offset",
+  "obs_default": "metadata"
+}

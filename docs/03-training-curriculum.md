@@ -1,37 +1,34 @@
-# Training Curriculum
+# Training Plan
 
-## Philosophy
+## Active Route
 
-We do not jump straight to hardware. The intended order is:
-
-1. conversion + replay
-2. `g1-moves`-compatible smoke run
-3. full single-clip training from scratch
-4. checkpoint selection
-5. ONNX parity
-6. standalone `sim2sim`
-
-## Active Task
-
-The active task is:
+The active documented route in this repo is:
 
 - `Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat`
 
-What changes versus the base task:
+This is the task we actually used for the long public run documented in the README.
 
-- `anchor_body_name = pelvis`
-- actor observation order matches `g1-moves`
-- ONNX export is actor-only (`obs -> actions`)
-- standalone replay consumes `onnx + motion.npz + xml`
+## Why This Task
+
+It keeps the parts we needed for transfer:
+
+- `g1-moves`-style actor observation layout
+- actor-only ONNX export
+- explicit control metadata in ONNX
+- compatibility with the RoboJuDo sim2sim runner
+
+## Recommended Training Order
+
+1. validate the input bundle
+2. convert to `motion.npz`
+3. replay the reference motion
+4. run a smoke training job
+5. run the long single-clip training job
+6. evaluate checkpoints inside `mjlab`
+7. export ONNX
+8. compare checkpoints in RoboJuDo sim2sim
 
 ## Smoke Run
-
-Use this to verify that:
-
-- the task builds
-- PPO runs without NaNs
-- checkpoints save
-- ONNX export/parity work
 
 ```bash
 python3 -m body29_pipeline.cli smoke-train \
@@ -39,15 +36,10 @@ python3 -m body29_pipeline.cli smoke-train \
   --iterations 100 \
   --num-envs 64 \
   --save-interval 50 \
-  --run-name smoke_video_005_g1_moves_compat \
-  --video \
-  --video-interval 100 \
-  --video-length 285
+  --run-name smoke_video_005_g1_moves_compat
 ```
 
-## Main Single-Clip Training
-
-Train from scratch on the active task:
+## Long Run
 
 ```bash
 python3 -m body29_pipeline.cli train \
@@ -57,11 +49,24 @@ python3 -m body29_pipeline.cli train \
   --num-envs 2048 \
   --save-interval 2000 \
   --experiment-name body29dof_g1_moves_compat \
-  --run-name train_video_005_g1_moves_compat \
-  --video \
-  --video-interval 5000 \
-  --video-length 285
+  --run-name train_video_005_g1_moves_compat_long_tty \
+  --seed 42
 ```
+
+## Monitoring
+
+```bash
+tensorboard --logdir research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat
+```
+
+Focus on:
+
+- `Train/mean_episode_length`
+- `Train/mean_reward`
+- `Metrics/motion/error_body_pos`
+- `Metrics/motion/error_anchor_pos`
+- `Metrics/motion/error_joint_vel`
+- `Episode_Termination/ee_body_pos`
 
 ## Checkpoint Selection
 
@@ -69,18 +74,12 @@ We do not assume the last checkpoint is the best checkpoint.
 
 Selection order:
 
-1. highest full-clip survival / timeout completion
-2. lowest `mpkpe`
-3. lowest `anchor_xy_error`
+1. strong `mjlab` metrics
+2. clean full-clip replay
+3. strong RoboJuDo transfer metrics
+4. visual quality in sim2sim
 
-## Export After Training
+That is why the repo currently treats:
 
-Once a candidate checkpoint is chosen:
-
-```bash
-python3 -m body29_pipeline.cli export-onnx \
-  --task-id Mjlab-Tracking-Flat-Unitree-G1-G1MovesCompat \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt
-```
-
-The exported ONNX is actor-only and is the artifact used for standalone `sim2sim`.
+- `model_10000` as the best measured `mjlab` checkpoint
+- `model_14000` as the best current RoboJuDo transfer checkpoint

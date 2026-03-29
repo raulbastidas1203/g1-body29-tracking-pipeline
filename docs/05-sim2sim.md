@@ -1,46 +1,76 @@
 # Sim2Sim
 
-## Status
+## Active Path
 
-The active `sim2sim` route is now the standalone `g1-moves`-compatible runner.
+The active sim2sim route is the RoboJuDo-style runner under:
 
-What this means:
+- `research/g1-moves/RoboJuDo/scripts/eval_mjlab_g1moves_robojudo.py`
 
-- policy is exported as actor-only ONNX: `obs -> actions`
-- reference motion stays external in `motion.npz`
-- the standalone runner reconstructs observations from `onnx + npz + xml`
-- PD gains, default joint positions, and action scale come from ONNX metadata
+This is the path that gave the best transfer results for the current policy family.
 
-## Default XML
+## XML
 
-The default XML path in this repo is:
+The XML we actually used is:
 
-`research/TWIST2/assets/g1/g1_29dof_rev_1_0.xml`
+- `research/g1-moves/RoboJuDo/assets/robots/g1/g1_29dof_rev_1_0.xml`
 
-This is not bundled in this repository; `bootstrap_upstreams.sh` clones `TWIST2` so the default path exists on a fresh machine.
+## Contract
 
-## Command
+The runner consumes:
+
+- actor-only ONNX
+- `motion.npz`
+- RoboJuDo G1 XML
+
+The ONNX metadata supplies:
+
+- `joint_names`
+- `default_joint_pos`
+- `action_scale`
+- `joint_stiffness`
+- `joint_damping`
+- `anchor_body_name`
+- `body_names`
+
+## Working Mode
+
+For the current `mjlab`-trained checkpoints, the best working mode was:
+
+- `action_mode = scaled_offset`
+- `obs_default = metadata`
+
+This performed better than the literal direct-target mode.
+
+## Example Command
 
 ```bash
-python3 -m body29_pipeline.cli sim2sim \
-  --checkpoint-file research/mjlab/logs/rsl_rl/body29dof_g1_moves_compat/<run>/model_<step>.pt \
-  --motion-file artifacts/video_005/motion.npz \
-  --xml-file research/TWIST2/assets/g1/g1_29dof_rev_1_0.xml \
-  --output-video artifacts/video_005/g1_moves_compat_sim2sim.mp4 \
-  --output-metrics artifacts/video_005/g1_moves_compat_sim2sim.json
+cd research/g1-moves/RoboJuDo
+./.venv/bin/python scripts/eval_mjlab_g1moves_robojudo.py \
+  --onnx-file /path/to/model.onnx \
+  --motion-file /home/raul/00_cursor/RL/artifacts/video_005/motion.npz \
+  --xml-file /home/raul/00_cursor/RL/research/g1-moves/RoboJuDo/assets/robots/g1/g1_29dof_rev_1_0.xml \
+  --output-video /path/to/output.mp4 \
+  --output-metrics /path/to/output.json \
+  --action-mode scaled_offset \
+  --obs-default metadata \
+  --video-width 640 \
+  --video-height 480
 ```
 
-## What The Runner Does
+## Metrics To Watch
 
-- loads the actor-only ONNX
-- reads `joint_names`, `action_scale`, `joint_stiffness`, `joint_damping`, `anchor_body_name`, and body-name metadata
-- selects the correct reference bodies from `motion.npz`
-- rebuilds the 160-dim observation vector in the `g1-moves` order
-- runs MuJoCo at the simulation timestep declared in the ONNX metadata
-- applies PD torques to the XML actuators
-- records MP4 and JSON metrics
+- `mpkpe`
+- `r_mpkpe`
+- `joint_vel_error`
+- `anchor_xy_error`
+- `anchor_xy_error_max`
 
-## Notes
+## Current Best
 
-- The XML framebuffer may be smaller than 1280x720; the runner auto-clamps to the XML offscreen framebuffer size.
-- If standalone falls while `mjlab` rollout is fine, treat that as a contract/debug issue first, not as proof that PPO failed.
+At the time of writing, the best committed transfer result is:
+
+- `model_14000`
+
+See:
+
+- [`docs/results/robojudo_model_14000_full_scaled.json`](results/robojudo_model_14000_full_scaled.json)
