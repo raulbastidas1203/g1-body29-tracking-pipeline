@@ -18,15 +18,7 @@ Single-clip motion tracking for `Unitree G1` body-only `29 DoF`, from `video2rob
 
 [![mjlab rollout](docs/media/gifs/video_005_mjlab_model_8000.gif)](docs/media/videos/video_005_mjlab_model_8000.mp4)
 
-### Original vs robot
 
-![Original vs RoboJuDo](docs/media/gifs/video_005_original_vs_robojudo_14000.gif)
-
-### RoboJuDo sim2sim
-
-[![RoboJuDo rollout](docs/media/gifs/video_005_robojudo_model_14000.gif)](docs/media/videos/video_005_robojudo_model_14000.mp4)
-
----
 
 ## Overview
 
